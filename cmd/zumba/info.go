@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/nandi/pkgspec/internal/conda"
+	"github.com/nandi/zumba/internal/conda"
 	"github.com/spf13/cobra"
 )
 

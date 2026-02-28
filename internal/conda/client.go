@@ -13,7 +13,7 @@ import (
 const (
 	DefaultChannel = "conda-forge"
 	DefaultPlatform = "noarch"
-	CacheDirEnv     = "PKGSPEC_CACHE_DIR"
+	CacheDirEnv     = "ZUMBA_CACHE_DIR"
 	CacheTTL        = 1 * time.Hour
 )
 
@@ -38,7 +38,7 @@ func NewClient(opts ...Option) *Client {
 		c.CacheDir = dir
 	} else {
 		homeDir, _ := os.UserHomeDir()
-		c.CacheDir = filepath.Join(homeDir, ".cache", "pkgspec")
+		c.CacheDir = filepath.Join(homeDir, ".cache", "zumba")
 	}
 	
 	for _, opt := range opts {

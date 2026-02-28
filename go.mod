@@ -1,4 +1,4 @@
-module github.com/nandi/pkgspec
+module github.com/nandi/zumba
 
 go 1.25.7
 

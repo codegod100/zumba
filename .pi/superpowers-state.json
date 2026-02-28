@@ -30,13 +30,15 @@
     "phase": "idle",
     "testFiles": [],
     "sourceFiles": [
-      "cmd/pkgspec/main.go"
+      "cmd/zumba/info.go",
+      "cmd/zumba/search.go",
+      "internal/conda/client.go"
     ],
     "redVerificationPending": false
   },
   "debug": {
     "active": false,
-    "investigated": false,
+    "investigated": true,
     "fixAttempts": 0
   },
   "verification": {

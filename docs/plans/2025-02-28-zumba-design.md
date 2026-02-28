@@ -1,21 +1,21 @@
-# pkgspec Design
+# zumba Design
 
 ## Overview
 CLI tool to search conda packages with enhanced metadata (description, homepage, etc.) that mamba doesn't provide.
 
 ## Tech Stack
 - **Language:** Go
-- **CLI Style:** Git-style subcommands (`pkgspec search TERM`)
+- **CLI Style:** Git-style subcommands (`zumba search TERM`)
 - **CLI Library:** cobra
 
 ## Commands
 
-### `pkgspec search TERM [--channel CHANNEL]`
+### `zumba search TERM [--channel CHANNEL]`
 Search for packages matching TERM.
 - Default channel: conda-forge
 - Output: table with name, version, summary, homepage
 
-### `pkgspec info PACKAGE [--channel CHANNEL]`
+### `zumba info PACKAGE [--channel CHANNEL]`
 Show detailed package information.
 - All versions available
 - Full description
@@ -35,7 +35,7 @@ Show detailed package information.
 - Cached locally
 
 ## Caching Strategy
-- Cache in `~/.cache/pkgspec/` (or XDG cache dir)
+- Cache in `~/.cache/zumba/` (or XDG cache dir)
 - repodata.json: refresh after 1 hour
 - channeldata.json: refresh after 1 hour
 - Implement `--refresh` flag to force update
@@ -54,7 +54,7 @@ Default: table view
 
 ## Project Structure
 ```
-cmd/pkgspec/          - CLI entry points
+cmd/zumba/            - CLI entry points
   main.go
   search.go
   info.go
@@ -66,6 +66,6 @@ internal/conda/       - Conda data types and fetching
 ```
 
 ## Architecture Goals
-- Fast: leverage caching, parallelrequests
+- Fast: leverage caching, parallel requests
 - Offline-capable: use cached data when available
 - Extensible: easy to add new commands
