@@ -7,7 +7,7 @@ import (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "pkgspec",
+		Use:   "zumba",
 		Short: "Search conda packages with enhanced metadata",
 		Long:  `A CLI tool to search conda packages and display metadata that mamba doesn't provide.`,
 	}

@@ -30,14 +30,13 @@
     "phase": "idle",
     "testFiles": [],
     "sourceFiles": [
-      "cmd/pkgspec/info.go",
       "cmd/pkgspec/main.go"
     ],
     "redVerificationPending": false
   },
   "debug": {
     "active": false,
-    "investigated": true,
+    "investigated": false,
     "fixAttempts": 0
   },
   "verification": {
