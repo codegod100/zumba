@@ -30,11 +30,8 @@
     "phase": "idle",
     "testFiles": [],
     "sourceFiles": [
-      "internal/conda/types.go",
-      "internal/conda/client.go",
-      "internal/conda/search.go",
-      "cmd/pkgspec/main.go",
-      "cmd/pkgspec/search.go"
+      "cmd/pkgspec/info.go",
+      "cmd/pkgspec/main.go"
     ],
     "redVerificationPending": false
   },

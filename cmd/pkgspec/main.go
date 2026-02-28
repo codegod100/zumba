@@ -13,6 +13,7 @@ func main() {
 	}
 	
 	rootCmd.AddCommand(newSearchCmd())
+	rootCmd.AddCommand(newInfoCmd())
 	
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
