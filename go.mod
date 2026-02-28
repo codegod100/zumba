@@ -1,4 +1,4 @@
-module github.com/nandi/zumba
+module github.com/codegod100/zumba
 
 go 1.25.7
 

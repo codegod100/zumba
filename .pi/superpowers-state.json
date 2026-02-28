@@ -31,14 +31,13 @@
     "testFiles": [],
     "sourceFiles": [
       "cmd/zumba/info.go",
-      "cmd/zumba/search.go",
-      "internal/conda/client.go"
+      "cmd/zumba/search.go"
     ],
     "redVerificationPending": false
   },
   "debug": {
     "active": false,
-    "investigated": true,
+    "investigated": false,
     "fixAttempts": 0
   },
   "verification": {

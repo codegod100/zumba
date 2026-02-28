@@ -6,7 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/nandi/zumba/internal/conda"
+	"github.com/codegod100/zumba/internal/conda"
 	"github.com/spf13/cobra"
 )
 

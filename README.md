@@ -9,7 +9,7 @@ A CLI tool to search conda packages with enhanced metadata that mamba doesn't pr
 ## Installation
 
 ```bash
-go install github.com/nandi/zumba/cmd/zumba@latest
+go install github.com/codegod100/zumba/cmd/zumba@latest
 ```
 
 Or build from source:
