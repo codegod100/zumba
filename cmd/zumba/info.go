@@ -31,26 +31,40 @@ func newInfoCmd() *cobra.Command {
 				conda.WithPlatform(platform),
 			)
 			
-			// Fetch channel data
+			// Try channel data first
 			channelData, err := client.FetchChannelData(forceRefresh)
 			if err != nil {
 				return fmt.Errorf("failed to fetch channeldata: %w", err)
 			}
 			
-			// Find package
-			pkgInfo, ok := channelData.Packages[pkgName]
-			if !ok {
+			// Find package in channeldata
+			if pkgInfo, ok := channelData.Packages[pkgName]; ok && pkgInfo.Version != "" {
+				if outputJSON {
+					enc := json.NewEncoder(os.Stdout)
+					enc.SetIndent("", "  ")
+					return enc.Encode(pkgInfo)
+				}
+				return printPackageInfo(pkgName, pkgInfo)
+			}
+			
+			// Fall back to repodata
+			repodata, err := client.FetchRepoData(forceRefresh)
+			if err != nil {
+				return fmt.Errorf("failed to fetch repodata: %w", err)
+			}
+			
+			// Find package in repodata
+			pkg := findPackageInRepoData(repodata, pkgName)
+			if pkg == nil {
 				return fmt.Errorf("package %q not found in channel %s", pkgName, channel)
 			}
 			
-			// Output
 			if outputJSON {
 				enc := json.NewEncoder(os.Stdout)
 				enc.SetIndent("", "  ")
-				return enc.Encode(pkgInfo)
+				return enc.Encode(pkg)
 			}
-			
-			return printPackageInfo(pkgName, pkgInfo)
+			return printPackageFromRepoData(pkgName, pkg)
 		},
 	}
 	
@@ -94,6 +108,38 @@ func printPackageInfo(name string, pkg conda.PackageInfo) error {
 		w.Flush()
 		fmt.Printf("\nDescription:\n%s\n", pkg.Description)
 		return nil
+	}
+	
+	return w.Flush()
+}
+
+func findPackageInRepoData(repodata *conda.RepoData, name string) *conda.Package {
+	// Search in both packages and packages.conda
+	for _, pkg := range repodata.Packages {
+		if pkg.Name == name {
+			return &pkg
+		}
+	}
+	for _, pkg := range repodata.PackagesCon {
+		if pkg.Name == name {
+			return &pkg
+		}
+	}
+	return nil
+}
+
+func printPackageFromRepoData(name string, pkg *conda.Package) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	
+	fmt.Fprintf(w, "Name:\t%s\n", name)
+	fmt.Fprintf(w, "Version:\t%s\n", pkg.Version)
+	fmt.Fprintf(w, "Build:\t%s\n", pkg.Build)
+	fmt.Fprintf(w, "License:\t%s\n", pkg.License)
+	fmt.Fprintf(w, "Platform:\t%s\n", pkg.Subdir)
+	fmt.Fprintf(w, "Size:\t%d bytes\n", pkg.Size)
+	
+	if len(pkg.Depends) > 0 {
+		fmt.Fprintf(w, "Depends:\t%v\n", pkg.Depends)
 	}
 	
 	return w.Flush()

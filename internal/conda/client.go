@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -68,9 +69,22 @@ func WithCacheDir(dir string) Option {
 	}
 }
 
+// isFullURL checks if the channel is a full URL
+func isFullURL(channel string) bool {
+	return strings.HasPrefix(channel, "http://") || strings.HasPrefix(channel, "https://")
+}
+
+// channelBaseURL returns the base URL for a channel
+func channelBaseURL(channel string) string {
+	if isFullURL(channel) {
+		return strings.TrimSuffix(channel, "/")
+	}
+	return "https://conda.anaconda.org/" + channel
+}
+
 // FetchRepoData downloads repodata.json for the channel/platform
 func (c *Client) FetchRepoData(forceRefresh bool) (*RepoData, error) {
-	cacheFile := filepath.Join(c.CacheDir, c.Channel, c.Platform, "repodata.json")
+	cacheFile := filepath.Join(c.CacheDir, strings.ReplaceAll(c.Channel, "/", "_"), c.Platform, "repodata.json")
 	
 	// Check cache
 	if !forceRefresh {
@@ -80,7 +94,8 @@ func (c *Client) FetchRepoData(forceRefresh bool) (*RepoData, error) {
 	}
 	
 	// Download
-	url := fmt.Sprintf("https://conda.anaconda.org/%s/%s/repodata.json", c.Channel, c.Platform)
+	baseURL := channelBaseURL(c.Channel)
+	url := fmt.Sprintf("%s/%s/repodata.json", baseURL, c.Platform)
 	data, err := c.download(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch repodata: %w", err)
@@ -122,8 +137,9 @@ func (c *Client) loadCachedRepoData(path string) (*RepoData, error) {
 }
 
 // FetchChannelData downloads channeldata.json for the channel
+// Returns nil if not available (some channels don't have it)
 func (c *Client) FetchChannelData(forceRefresh bool) (*ChannelData, error) {
-	cacheFile := filepath.Join(c.CacheDir, c.Channel, "channeldata.json")
+	cacheFile := filepath.Join(c.CacheDir, strings.ReplaceAll(c.Channel, "/", "_"), "channeldata.json")
 	
 	// Check cache
 	if !forceRefresh {
@@ -133,9 +149,14 @@ func (c *Client) FetchChannelData(forceRefresh bool) (*ChannelData, error) {
 	}
 	
 	// Download
-	url := fmt.Sprintf("https://conda.anaconda.org/%s/channeldata.json", c.Channel)
+	baseURL := channelBaseURL(c.Channel)
+	url := fmt.Sprintf("%s/channeldata.json", baseURL)
 	data, err := c.download(url)
 	if err != nil {
+		// channeldata.json is optional - return empty data if not found
+		if strings.Contains(err.Error(), "HTTP 404") {
+			return &ChannelData{Packages: make(map[string]PackageInfo)}, nil
+		}
 		return nil, fmt.Errorf("failed to fetch channeldata: %w", err)
 	}
 	
