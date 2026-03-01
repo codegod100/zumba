@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/codegod100/zumba/internal/conda"
@@ -30,6 +31,20 @@ func newInfoCmd() *cobra.Command {
 				conda.WithChannel(channel),
 				conda.WithPlatform(platform),
 			)
+			
+			// Try prefix.dev GraphQL API first for prefix.dev channels
+			if conda.IsPrefixDev(channel) {
+				pkg, err := client.FetchPrefixDevPackage(pkgName)
+				if err == nil {
+					if outputJSON {
+						enc := json.NewEncoder(os.Stdout)
+						enc.SetIndent("", "  ")
+						return enc.Encode(pkg)
+					}
+					return printPackageFromPrefixDev(pkgName, pkg, platform)
+				}
+				// Fall through to repodata on error
+			}
 			
 			// Try channel data first
 			channelData, err := client.FetchChannelData(forceRefresh)
@@ -140,6 +155,72 @@ func printPackageFromRepoData(name string, pkg *conda.Package) error {
 	
 	if len(pkg.Depends) > 0 {
 		fmt.Fprintf(w, "Depends:\t%v\n", pkg.Depends)
+	}
+	
+	return w.Flush()
+}
+
+func printPackageFromPrefixDev(name string, pkg *conda.PrefixDevPackage, platform string) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	
+	fmt.Fprintf(w, "Name:\t%s\n", name)
+	fmt.Fprintf(w, "Description:\t%s\n", strings.TrimSpace(pkg.Description))
+	
+	// Find variant matching platform (or first one)
+	var variant *struct {
+		Version     string `json:"version"`
+		BuildString string `json:"buildString"`
+		Platform    string `json:"platform"`
+		Filename    string `json:"filename"`
+		Size        int64  `json:"size"`
+		RawIndex    struct {
+			Depends  []string `json:"depends"`
+			License  string   `json:"license"`
+			Subdir   string   `json:"subdir"`
+		} `json:"rawIndex"`
+		RawAbout struct {
+			Home        string `json:"home"`
+			DevURL      string `json:"dev_url"`
+			Summary     string `json:"summary"`
+			Description string `json:"description"`
+			License     string `json:"license"`
+		} `json:"rawAbout"`
+	}
+	
+	for i := range pkg.Variants.Page {
+		if pkg.Variants.Page[i].Platform == platform || variant == nil {
+			variant = &pkg.Variants.Page[i]
+			if pkg.Variants.Page[i].Platform == platform {
+				break
+			}
+		}
+	}
+	
+	if variant != nil {
+		fmt.Fprintf(w, "Version:\t%s\n", variant.Version)
+		fmt.Fprintf(w, "Build:\t%s\n", variant.BuildString)
+		fmt.Fprintf(w, "Platform:\t%s\n", variant.Platform)
+		fmt.Fprintf(w, "Size:\t%d bytes\n", variant.Size)
+		
+		if variant.RawAbout.Summary != "" {
+			fmt.Fprintf(w, "Summary:\t%s\n", variant.RawAbout.Summary)
+		}
+		if variant.RawAbout.Home != "" {
+			fmt.Fprintf(w, "Homepage:\t%s\n", variant.RawAbout.Home)
+		}
+		if variant.RawAbout.DevURL != "" {
+			fmt.Fprintf(w, "Dev URL:\t%s\n", variant.RawAbout.DevURL)
+		}
+		license := variant.RawAbout.License
+		if license == "" {
+			license = variant.RawIndex.License
+		}
+		if license != "" {
+			fmt.Fprintf(w, "License:\t%s\n", license)
+		}
+		if len(variant.RawIndex.Depends) > 0 {
+			fmt.Fprintf(w, "Depends:\t%v\n", variant.RawIndex.Depends)
+		}
 	}
 	
 	return w.Flush()

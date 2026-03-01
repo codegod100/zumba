@@ -1,6 +1,7 @@
 package conda
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -80,6 +81,113 @@ func channelBaseURL(channel string) string {
 		return strings.TrimSuffix(channel, "/")
 	}
 	return "https://conda.anaconda.org/" + channel
+}
+
+// isPrefixDev checks if the channel is a prefix.dev URL
+func isPrefixDev(channel string) bool {
+	return strings.Contains(channel, "prefix.dev")
+}
+
+// IsPrefixDev checks if the channel is a prefix.dev URL (exported)
+func IsPrefixDev(channel string) bool {
+	return isPrefixDev(channel)
+}
+
+// prefixDevChannelName extracts the channel name from a prefix.dev URL
+func prefixDevChannelName(channel string) string {
+	// https://prefix.dev/nandi-testing -> nandi-testing
+	parts := strings.Split(strings.TrimSuffix(channel, "/"), "/")
+	return parts[len(parts)-1]
+}
+
+// PrefixDevPackage represents package info from prefix.dev GraphQL API
+type PrefixDevPackage struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Variants    struct {
+		Page []struct {
+			Version     string `json:"version"`
+			BuildString string `json:"buildString"`
+			Platform    string `json:"platform"`
+			Filename    string `json:"filename"`
+			Size        int64  `json:"size"`
+			RawIndex    struct {
+				Depends  []string `json:"depends"`
+				License  string   `json:"license"`
+				Subdir   string   `json:"subdir"`
+			} `json:"rawIndex"`
+			RawAbout struct {
+				Home        string `json:"home"`
+				DevURL      string `json:"dev_url"`
+				Summary     string `json:"summary"`
+				Description string `json:"description"`
+				License     string `json:"license"`
+			} `json:"rawAbout"`
+		} `json:"page"`
+	} `json:"variants"`
+}
+
+// FetchPrefixDevPackage fetches package info from prefix.dev GraphQL API
+func (c *Client) FetchPrefixDevPackage(pkgName string) (*PrefixDevPackage, error) {
+	channelName := prefixDevChannelName(c.Channel)
+	
+	query := map[string]interface{}{
+		"query": fmt.Sprintf(`{
+			package(channelName: "%s", name: "%s") {
+				name
+				description
+				variants(limit: 10) {
+					page {
+						version
+						buildString
+						platform
+						filename
+						size
+						rawIndex
+						rawAbout
+					}
+				}
+			}
+		}`, channelName, pkgName),
+	}
+	
+	body, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	
+	resp, err := c.HTTPClient.Post("https://prefix.dev/api/graphql", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GraphQL request failed: HTTP %d", resp.StatusCode)
+	}
+	
+	var result struct {
+		Data struct {
+			Package PrefixDevPackage `json:"package"`
+		} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+	
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+	
+	if len(result.Errors) > 0 {
+		return nil, fmt.Errorf("GraphQL error: %s", result.Errors[0].Message)
+	}
+	
+	if result.Data.Package.Name == "" {
+		return nil, fmt.Errorf("package not found")
+	}
+	
+	return &result.Data.Package, nil
 }
 
 // FetchRepoData downloads repodata.json for the channel/platform
