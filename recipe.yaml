@@ -1,0 +1,33 @@
+package:
+  name: zumba
+  version: 0.1.0
+
+source:
+  url: https://github.com/codegod100/zumba/archive/72f64a5.tar.gz
+  sha256: 829990b44685e69d9556f8a387c37e715f41b16ca3b1862a8188a37747c733ad
+
+build:
+  number: 0
+  script:
+    - CGO_ENABLED=0 go build -o $PREFIX/bin/zumba ./cmd/zumba
+
+requirements:
+  build:
+    - go >=1.21
+  run: []
+
+tests:
+  - script:
+      - zumba --help
+      - zumba search --help
+      - zumba info --help
+
+about:
+  summary: Search conda packages with enhanced metadata
+  description: |
+    A CLI tool to search conda packages and display metadata that mamba doesn't provide,
+    including descriptions, homepages, and licenses.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/codegod100/zumba
+  repository: https://github.com/codegod100/zumba

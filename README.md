@@ -8,14 +8,26 @@ A CLI tool to search conda packages with enhanced metadata that mamba doesn't pr
 
 ## Installation
 
+### Conda (recommended)
+
+```bash
+# Using pixi
+pixi global install --channel https://prefix.dev/nandi-testing zumba
+
+# Using conda/mamba
+conda install -c https://prefix.dev/nandi-testing zumba
+```
+
+### Go
+
 ```bash
 go install github.com/codegod100/zumba/cmd/zumba@latest
 ```
 
-Or build from source:
+### Build from source
 
 ```bash
-git clone https://github.com/nandi/zumba.git
+git clone https://github.com/codegod100/zumba.git
 cd zumba
 go build -o zumba ./cmd/zumba
 ```
