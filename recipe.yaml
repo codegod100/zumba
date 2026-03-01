@@ -3,11 +3,11 @@ package:
   version: 0.1.0
 
 source:
-  url: https://github.com/codegod100/zumba/archive/f7bb4f1.tar.gz
-  sha256: 4608a747b896c33baa395c8f4bbcdf0fa22f20efb1396610e3f0a7f1b9f19e1d
+  url: https://github.com/codegod100/zumba/archive/4f67fbe.tar.gz
+  sha256: 13e1d0b96bf6e454b8fd23f1194d14fad8cdfd48773de3e4f8d3c95e45c4837d
 
 build:
-  number: 1
+  number: 2
   script:
     - CGO_ENABLED=0 go build -o $PREFIX/bin/zumba ./cmd/zumba
 
