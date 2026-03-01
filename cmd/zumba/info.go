@@ -46,7 +46,7 @@ func newInfoCmd() *cobra.Command {
 				// Fall through to repodata on error
 			}
 			
-			// Try streaming channeldata first (fast - stops when package found/not found)
+			// Try streaming channeldata (stops when package found)
 			pkgInfo, err := client.StreamPackageFromChannelData(pkgName)
 			if err == nil && pkgInfo != nil && pkgInfo.Version != "" {
 				if outputJSON {
@@ -57,18 +57,21 @@ func newInfoCmd() *cobra.Command {
 				return printPackageInfo(pkgName, *pkgInfo)
 			}
 			
-			// Fall back to streaming repodata
-			pkg, err := client.StreamPackageFromRepoData(pkgName)
-			if err != nil {
-				return fmt.Errorf("package %q not found in channel %s", pkgName, channel)
+			// Package not found - channeldata has all packages for conda-forge
+			// Only try repodata for channels that might not have channeldata
+			if !strings.Contains(channel, "conda-forge") {
+				pkg, err := client.StreamPackageFromRepoData(pkgName)
+				if err == nil {
+					if outputJSON {
+						enc := json.NewEncoder(os.Stdout)
+						enc.SetIndent("", "  ")
+						return enc.Encode(pkg)
+					}
+					return printPackageFromRepoData(pkgName, pkg)
+				}
 			}
 			
-			if outputJSON {
-				enc := json.NewEncoder(os.Stdout)
-				enc.SetIndent("", "  ")
-				return enc.Encode(pkg)
-			}
-			return printPackageFromRepoData(pkgName, pkg)
+			return fmt.Errorf("package %q not found in channel %s", pkgName, channel)
 		},
 	}
 	
