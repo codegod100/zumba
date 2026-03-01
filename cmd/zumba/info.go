@@ -46,31 +46,20 @@ func newInfoCmd() *cobra.Command {
 				// Fall through to repodata on error
 			}
 			
-			// Try channel data first
-			channelData, err := client.FetchChannelData(forceRefresh)
-			if err != nil {
-				return fmt.Errorf("failed to fetch channeldata: %w", err)
-			}
-			
-			// Find package in channeldata
-			if pkgInfo, ok := channelData.Packages[pkgName]; ok && pkgInfo.Version != "" {
+			// Try streaming channeldata first (fast - stops when package found/not found)
+			pkgInfo, err := client.StreamPackageFromChannelData(pkgName)
+			if err == nil && pkgInfo != nil && pkgInfo.Version != "" {
 				if outputJSON {
 					enc := json.NewEncoder(os.Stdout)
 					enc.SetIndent("", "  ")
 					return enc.Encode(pkgInfo)
 				}
-				return printPackageInfo(pkgName, pkgInfo)
+				return printPackageInfo(pkgName, *pkgInfo)
 			}
 			
-			// Fall back to repodata
-			repodata, err := client.FetchRepoData(forceRefresh)
+			// Fall back to streaming repodata
+			pkg, err := client.StreamPackageFromRepoData(pkgName)
 			if err != nil {
-				return fmt.Errorf("failed to fetch repodata: %w", err)
-			}
-			
-			// Find package in repodata
-			pkg := findPackageInRepoData(repodata, pkgName)
-			if pkg == nil {
 				return fmt.Errorf("package %q not found in channel %s", pkgName, channel)
 			}
 			

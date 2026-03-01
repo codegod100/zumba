@@ -313,9 +313,58 @@ func (c *Client) download(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+// FetchStreaming returns a reader for streaming the URL content
+func (c *Client) FetchStreaming(url string) (io.ReadCloser, error) {
+	resp, err := c.HTTPClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, url)
+	}
+	return resp.Body, nil
+}
+
 func (c *Client) cacheData(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
 	return os.WriteFile(path, data, 0644)
+}
+
+// StreamPackageFromChannelData fetches and streams channeldata.json to find a package
+func (c *Client) StreamPackageFromChannelData(pkgName string) (*PackageInfo, error) {
+	baseURL := channelBaseURL(c.Channel)
+	url := fmt.Sprintf("%s/channeldata.json", baseURL)
+	
+	rc, err := c.FetchStreaming(url)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	
+	pkgInfo, found := PackageExistsInChannelData(rc, pkgName)
+	if !found {
+		return nil, fmt.Errorf("package %q not found", pkgName)
+	}
+	return pkgInfo, nil
+}
+
+// StreamPackageFromRepoData fetches and streams repodata.json to find a package
+func (c *Client) StreamPackageFromRepoData(pkgName string) (*Package, error) {
+	baseURL := channelBaseURL(c.Channel)
+	url := fmt.Sprintf("%s/%s/repodata.json", baseURL, c.Platform)
+	
+	rc, err := c.FetchStreaming(url)
+	if err != nil {
+		return nil, err
+	}
+	defer rc.Close()
+	
+	pkg, found := PackageExistsInRepoData(rc, pkgName)
+	if !found {
+		return nil, fmt.Errorf("package %q not found", pkgName)
+	}
+	return pkg, nil
 }
